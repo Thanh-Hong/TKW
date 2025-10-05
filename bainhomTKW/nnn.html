@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>🧩 Ghép hình Doraemon</title>
+  <style>
+    :root{
+      --piece-size:80px;   
+      --cols:4;
+      --rows:3;
+    }
+    body{
+      margin:0;
+      font-family:"Comic Sans MS", Arial, sans-serif;
+      background: linear-gradient(135deg,#fff7db 0%, #dff7ff 50%, #fff0f7 100%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:10px;
+    }
+
+    h1 {
+      color:#0077cc;
+      margin-bottom:15px;
+      font-size:22px;
+    }
+
+    .top-area {
+      display:flex;
+      gap:20px;
+      align-items:flex-start;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    /* khung ghép */
+    .puzzle-board {
+      width: calc(var(--cols) * var(--piece-size));
+      height: calc(var(--rows) * var(--piece-size));
+      display:grid;
+      grid-template-columns: repeat(var(--cols), var(--piece-size));
+      grid-template-rows: repeat(var(--rows), var(--piece-size));
+      gap:1px;
+      background: #9bb7d1;
+      border-radius:6px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.15);
+    }
+    .dropzone {
+      width: var(--piece-size);
+      height: var(--piece-size);
+      background: #fff;
+      border: 0.5px dashed #bbb;
+    }
+
+    /* mảnh ghép */
+    .pieces {
+      margin-top:15px;
+      display:grid;
+      grid-template-columns: repeat(6, var(--piece-size));
+      grid-template-rows: repeat(2, var(--piece-size));
+      gap:5px;
+      background:#fff;
+      padding:8px;
+      border-radius:8px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.1);
+    }
+    .piece {
+      width: var(--piece-size);
+      height: var(--piece-size);
+      border:1px solid rgba(0,0,0,0.12);
+      border-radius:4px;
+      cursor:grab;
+      transition: transform 0.2s;
+    }
+    .piece:hover { transform:scale(1.05); }
+
+    .original {
+      text-align:center;
+    }
+    .original p { margin-bottom:6px; font-size:14px; }
+    .original img {
+      width: calc(var(--cols) * var(--piece-size) * 0.7);
+      border-radius:6px;
+      box-shadow:0 3px 8px rgba(0,0,0,0.15);
+    }
+
+    .buttons {
+      margin-top:15px;
+      display:flex;
+      gap:10px;
+    }
+    button {
+      padding:8px 16px;
+      font-size:14px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      transition:0.3s;
+    }
+    .check-btn { background:#28a745; color:#fff; }
+    .check-btn:hover { background:#218838; }
+    .reset-btn { background:#ff4081; color:#fff; }
+    .reset-btn:hover { background:#e73370; }
+  </style>
+</head>
+<body>
+  <h1>🧩 Ghép hình Doraemon</h1>
+
+  <div class="top-area">
+    <div class="puzzle-board" id="board"></div>
+    <div class="original">
+      <p>📌 Hình mẫu</p>
+      <img src="http://giadinh.mediacdn.vn/thumb_w/640/2017/photo-2-1511253800312.jpg" alt="Mẫu Doraemon">
+    </div>
+  </div>
+
+  <div class="pieces" id="pieces"></div>
+
+  <div class="buttons">
+    <button class="check-btn" onclick="checkResult()">✅ Kiểm tra kết quả</button>
+    <button class="reset-btn" onclick="resetGame()">🔄 Chơi lại</button>
+  </div>
+
+  <!-- Âm thanh -->
+  <audio id="correctSound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+  <audio id="wrongSound" src="https://www.soundjay.com/button/sounds/button-10.mp3"></audio>
+
+  <script>
+    const cols = 4, rows = 3, size = 80;
+    const board = document.getElementById('board');
+    const piecesContainer = document.getElementById('pieces');
+    const correctSound = document.getElementById('correctSound');
+    const wrongSound = document.getElementById('wrongSound');
+    const imageSrc = "http://giadinh.mediacdn.vn/thumb_w/640/2017/photo-2-1511253800312.jpg";
+
+    let pieces = [];
+
+    function playSound(sound){
+      sound.pause();
+      sound.currentTime=0;
+      sound.play().catch(()=>{});
+    }
+
+    // Tách ảnh thành mảnh nhỏ bằng canvas
+    function splitImage(src, cols, rows, size, callback){
+      let img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = src;
+      img.onload = function(){
+        let pieces = [];
+        let canvas = document.createElement("canvas");
+        let ctx = canvas.getContext("2d");
+        canvas.width = size;
+        canvas.height = size;
+        for(let y=0;y<rows;y++){
+          for(let x=0;x<cols;x++){
+            ctx.clearRect(0,0,size,size);
+            ctx.drawImage(img, -x*size, -y*size, cols*size, rows*size);
+            let piece = document.createElement("img");
+            piece.className="piece";
+            piece.width = size;
+            piece.height = size;
+            piece.src = canvas.toDataURL();
+            piece.dataset.index = y*cols + x;
+            piece.draggable = true;
+            pieces.push(piece);
+          }
+        }
+        callback(pieces);
+      };
+    }
+
+    function initGame(){
+      board.innerHTML="";
+      piecesContainer.innerHTML="";
+      pieces=[];
+
+      // tạo dropzones
+      for(let i=0;i<cols*rows;i++){
+        const dz = document.createElement('div');
+        dz.className="dropzone";
+        dz.dataset.index=i;
+        board.appendChild(dz);
+      }
+
+      // tạo mảnh từ ảnh gốc
+      splitImage(imageSrc, cols, rows, size, (result)=>{
+        pieces = result;
+        pieces.sort(()=>Math.random()-0.5);
+        pieces.forEach(p=>piecesContainer.appendChild(p));
+      });
+    }
+
+    // Drag drop
+    let dragged=null;
+    document.addEventListener("dragstart", e=>{
+      if(e.target.classList.contains("piece")){
+        dragged=e.target;
+      }
+    });
+    document.addEventListener("dragover", e=>e.preventDefault());
+    document.addEventListener("drop", e=>{
+      e.preventDefault();
+      if(dragged){
+        let zone = null;
+        if(e.target.classList.contains("dropzone")){
+          zone = e.target;
+        } else if(e.target.parentElement?.classList.contains("dropzone")){
+          zone = e.target.parentElement;
+        }
+        if(zone){
+          if(zone.firstChild){
+            piecesContainer.appendChild(zone.firstChild);
+          }
+          zone.appendChild(dragged);
+          if(dragged.dataset.index===zone.dataset.index){
+            playSound(correctSound);
+          } else {
+            playSound(wrongSound);
+          }
+        } else if(e.target.id==="pieces"){
+          piecesContainer.appendChild(dragged);
+        }
+      }
+    });
+
+    function checkResult(){
+      let correct=true;
+      document.querySelectorAll(".dropzone").forEach(zone=>{
+        let piece=zone.firstChild;
+        if(!piece || piece.dataset.index!==zone.dataset.index){
+          correct=false;
+        }
+      });
+      if(correct){
+        alert("🎉 Chúc mừng! Bạn đã ghép đúng Doraemon!");
+      }else{
+        alert("❌ Chưa đúng, thử lại nhé!");
+      }
+    }
+
+    function resetGame(){ initGame(); }
+
+    initGame();
+  </script>
+</body>
+</html>

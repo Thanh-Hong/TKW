@@ -1,0 +1,364 @@
+<!Doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HTML</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+<style>
+  .menu{
+    background-color: rgb(241,146,146);
+    width: 1200px; height: 40px;
+    display: flex; align-items: center;
+  }
+  .menu li{ list-style: none; float: left; }
+  .menu li a{
+    text-decoration: none; color: black;
+    padding: 0 20px; line-height: 40px; display: block;
+  }
+  .menu li a:hover{ background: gray; border-bottom: 2px red solid; }
+
+  /* Ghi chú và kệ sản phẩm nguồn */
+  .source-note{ margin: 16px 40px 0; color:#555; font: 600 14px/1 system-ui; }
+  .source-wrap{
+    display: grid;
+    grid-template-columns: repeat(4, 220px);
+    gap: 20px;
+    margin: 16px 40px 0 40px;
+  }
+
+  /* Card sản phẩm (ở kệ nguồn là layout flow, KHÔNG absolute) */
+  .product{
+    border: 2px solid red; width: 200px; height: 200px;
+    padding-left: 15px; background: rgba(220,220,220,.23);
+    position: static; /* quan trọng: tránh chồng chéo trước khi kéo */
+    cursor: grab; user-select: none; touch-action: none;
+  }
+  .box-name{ position: relative; margin-right: 50px; width: 180px; top: 5px; left: -6px; }
+  .box-new{ width: 30px; height: 30px; position: absolute; top: 0; right: 0; }
+  .box-product{ margin: 0 auto; height: 170px;}
+  .box-storage{ width: 30px; height: 30px; position: absolute; bottom: 0; right: 0; }
+  .box-price{ width: 30px; height: 30px; position: absolute; bottom: -7px; left: 7px; }
+
+  /* Khu vực thả */
+  .board{
+    position: relative;
+    width: 720px; min-height: 420px;
+    margin: 40px 0 40px 40px;
+    border: 3px dashed #7a7a7a;
+    border-radius: 10px;
+    background: repeating-linear-gradient(45deg,#f9f9f9,#f9f9f9 10px,#f1f1f1 10px,#f1f1f1 20px);
+    transition: height .2s ease;
+  }
+  .board::before{
+    content: "Kéo sản phẩm vào đây";
+    position: absolute; left: 16px; top: 10px; font: 600 14px/1 system-ui;
+    color: #555;
+  }
+
+  /* hiệu ứng khi kéo */
+  .dragging{ opacity: .95; cursor: grabbing; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+
+  /* chèn chỗ trống khi đang kéo ra khỏi kệ nguồn để lưới không sụp */
+  .placeholder{ width: 200px; height: 200px; visibility: hidden; }
+
+  /* Thanh công cụ */
+  .toolbar{ display:flex; gap:10px; align-items:center; margin: 16px 40px 0; }
+  .toolbar button{ padding:8px 12px; border:1px solid #ccc; background:#fff; border-radius:8px; cursor:pointer; }
+  .toolbar button:hover{ background:#f3f3f3; }
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Nhóm 7</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/html/bainhomTKW/home.html">Home</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="/html/bainhomTKW/muasam.html">Mua sắm</a>
+                </li>
+                <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Trò chơi
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="/html/bainhomTKW/mickey.html">🐭 Mickey học toán</a></li>
+                    <li><a class="dropdown-item" href="/html/bainhomTKW/doremon.html">🧩 Ghép hình Doraemon</a></li>
+                    <li><a class="dropdown-item" href="/html/bainhomTKW/noitu.html">Game Kéo Thả - Nối Từ</a></li>
+                </ul>
+                </li>
+            </ul>
+            <form class="d-flex" role="search">
+                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+                <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+            </div>
+        </div>
+        </nav>
+  <!-- Sản phẩm nguồn (thêm nhiều sản phẩm) -->
+  <div class="source-wrap">
+    <!-- Giữ nguyên sản phẩm cũ, đổi class để đồng nhất -->
+    <div class="product draggable" id="product1">
+      <div class="box-name"><b>WATER GUN PROMAX</b></div>
+      <img class="box-product" src="https://cdn.pixabay.com/photo/2023/02/11/01/46/pencil-7781876_640.png" width="180">
+      <img class="box-new" src="https://uxwing.com/wp-content/themes/uxwing/download/e-commerce-currency-shopping/new-icon.png" alt="new">
+      <img class="box-storage" src="https://cdn-icons-png.flaticon.com/512/3142/3142740.png" alt="storage">
+      <div class="box-price" style="font-size: larger;">$2000</div>
+    </div>
+
+    <div class="product draggable" id="product2">
+      <div class="box-name"><b>SUPER EARASER</b></div>
+      <img class="box-product" src="https://png.pngtree.com/png-vector/20190121/ourlarge/pngtree-rubber-anime-animation-eraser-cartoon-hand-drawn-png-image_508007.jpg" width="180" alt="product">
+      <img class="box-new" src="https://uxwing.com/wp-content/themes/uxwing/download/e-commerce-currency-shopping/new-icon.png" alt="new">
+      <img class="box-storage" src="https://cdn-icons-png.flaticon.com/512/3142/3142740.png" alt="storage">
+      <div class="box-price" style="font-size: larger;">$1499</div>
+    </div>
+
+    <div class="product draggable" id="product3">
+      <div class="box-name"><b>AQUA BLASTER X</b></div>
+      <img class="box-product" src="https://cdn.pixabay.com/photo/2013/07/13/12/06/gun-159569_640.png" width="180" alt="product">
+      <img class="box-new" src="https://uxwing.com/wp-content/themes/uxwing/download/e-commerce-currency-shopping/new-icon.png" alt="new">
+      <img class="box-storage" src="https://cdn-icons-png.flaticon.com/512/3142/3142740.png" alt="storage">
+      <div class="box-price" style="font-size: larger;">$999</div>
+    </div>
+
+    <div class="product draggable" id="product4">
+      <div class="box-name"><b>RAINSTORM MINI</b></div>
+      <img class="box-product" src="https://cdn.pixabay.com/photo/2017/01/31/22/06/toy-2021041_640.png" width="180" alt="product">
+      <img class="box-new" src="https://uxwing.com/wp-content/themes/uxwing/download/e-commerce-currency-shopping/new-icon.png" alt="new">
+      <img class="box-storage" src="https://cdn-icons-png.flaticon.com/512/3142/3142740.png" alt="storage">
+      <div class="box-price" style="font-size: larger;">$299</div>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <script>
+  (function(){
+    const board = document.getElementById('board');
+    const source = document.querySelector('.source-wrap');
+    const autoBtn = document.getElementById('autoArrangeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Cấu hình lưới trong board
+    const GRID = { padding: 10, cellW: 220, cellH: 220 };
+
+    // Lưu nơi gốc và placeholder cho từng phần tử
+    const meta = new WeakMap(); // { originParent, originNext, placeholder }
+
+    // Gán id ổn định nếu thiếu
+    document.querySelectorAll('.draggable').forEach((el, idx)=>{
+      if(!el.id) el.id = 'product_'+(idx+1);
+    });
+
+    function boardCols(){
+      return Math.max(1, Math.floor((board.clientWidth - GRID.padding*2)/GRID.cellW));
+    }
+    function boardRowsForCount(n){
+      return Math.ceil(n / boardCols());
+    }
+    function ensureBoardHeightFor(n){
+      const rows = boardRowsForCount(n);
+      const needed = GRID.padding*2 + rows*GRID.cellH;
+      board.style.height = needed + 'px';
+    }
+
+    function insideBoardByCenter(elRect){
+      const br = board.getBoundingClientRect();
+      const cx = elRect.left + elRect.width/2;
+      const cy = elRect.top  + elRect.height/2;
+      return cx>=br.left && cx<=br.right && cy>=br.top && cy<=br.bottom;
+    }
+
+    function occupancy(exclude){
+      const set = new Set();
+      board.querySelectorAll('.draggable').forEach(el=>{
+        if(el===exclude) return;
+        const left = parseFloat(el.style.left||0);
+        const top  = parseFloat(el.style.top||0);
+        const c = Math.round((left - GRID.padding)/GRID.cellW);
+        const r = Math.round((top  - GRID.padding)/GRID.cellH);
+        set.add(r+','+c);
+      });
+      return set;
+    }
+
+    function placeNearestFree(el, preferCol, preferRow){
+      const cols = boardCols();
+      const items = board.querySelectorAll('.draggable').length;
+      ensureBoardHeightFor(items);
+      const rows = Math.max(boardRowsForCount(items), 1);
+
+      const occ = occupancy(el);
+      // chuyển r,c thành chỉ số tuyến tính để tìm
+      let idx = Math.max(0, Math.min(preferRow, rows-1))*cols + Math.max(0, Math.min(preferCol, cols-1));
+      const max = rows*cols;
+      for(let i=0;i<max;i++){
+        const t = (idx + i) % max;
+        const r = Math.floor(t/cols);
+        const c = t % cols;
+        const key = r+','+c;
+        if(!occ.has(key)){
+          // snap
+          const er = el.getBoundingClientRect();
+          const x = Math.min(GRID.padding + c*GRID.cellW, board.clientWidth  - er.width);
+          const y = Math.min(GRID.padding + r*GRID.cellH,  board.clientHeight - er.height);
+          el.style.left = x + 'px';
+          el.style.top  = y + 'px';
+          return {r,c};
+        }
+      }
+      return null;
+    }
+
+    function createPlaceholderLike(el){
+      const ph = document.createElement('div');
+      ph.className = 'placeholder';
+      ph.style.width = getComputedStyle(el).width;
+      ph.style.height = getComputedStyle(el).height;
+      return ph;
+    }
+
+    function beginDrag(el, e){
+      if(!meta.has(el)){
+        meta.set(el, { originParent: el.parentElement, originNext: el.nextElementSibling, placeholder: null });
+      }
+      const m = meta.get(el);
+
+      el.classList.add('dragging');
+
+      // Nếu đang ở kệ nguồn, tạo placeholder để giữ chỗ
+      if(el.parentElement !== board && !m.placeholder){
+        m.placeholder = createPlaceholderLike(el);
+        el.parentElement.insertBefore(m.placeholder, el.nextElementSibling);
+      }
+
+      // Chuyển sang absolute theo toạ độ trang để kéo mượt
+      const rect = el.getBoundingClientRect();
+      el.style.position = 'absolute';
+      el.style.width = rect.width + 'px';
+      el.style.height = rect.height + 'px';
+      el.style.left = (rect.left + window.scrollX) + 'px';
+      el.style.top  = (rect.top  + window.scrollY) + 'px';
+      document.body.appendChild(el); // đưa lên top-layer tránh bị che
+
+      const start = { x: e.clientX, y: e.clientY };
+      const offset = { x: start.x - (rect.left + window.scrollX), y: start.y - (rect.top + window.scrollY) };
+
+      function onMove(ev){
+        const x = ev.clientX - offset.x;
+        const y = ev.clientY - offset.y;
+        el.style.left = x + 'px';
+        el.style.top  = y + 'px';
+      }
+
+      function onEnd(){
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onEnd);
+        el.classList.remove('dragging');
+
+        const er = el.getBoundingClientRect();
+        if(insideBoardByCenter(er)){
+          // Đưa vào board và snap vào ô trống gần vị trí thả
+          if(el.parentElement !== board){
+            board.appendChild(el);
+          }
+          const br = board.getBoundingClientRect();
+          const relLeft = er.left - br.left;
+          const relTop  = er.top  - br.top;
+          const preferCol = Math.round((relLeft - GRID.padding)/GRID.cellW);
+          const preferRow = Math.round((relTop  - GRID.padding)/GRID.cellH);
+          placeNearestFree(el, preferCol, preferRow);
+          // Xoá placeholder nếu có
+          const m2 = meta.get(el);
+          if(m2 && m2.placeholder){ m2.placeholder.remove(); m2.placeholder = null; }
+        } else {
+          // Trả về kệ nguồn đúng thứ tự
+          const m2 = meta.get(el);
+          if(m2){
+            const parent = m2.originParent || source;
+            if(m2.originNext && m2.originNext.parentElement === parent){
+              parent.insertBefore(el, m2.originNext);
+            } else {
+              parent.appendChild(el);
+            }
+            if(m2.placeholder){ m2.placeholder.remove(); m2.placeholder = null; }
+          } else {
+            source.appendChild(el);
+          }
+          // trả về flow bình thường
+          el.style.position = '';
+          el.style.width = '';
+          el.style.height = '';
+          el.style.left = '';
+          el.style.top  = '';
+        }
+      }
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onEnd);
+    }
+
+    function makeDraggable(el){
+      el.addEventListener('pointerdown', (e)=>{
+        // chỉ phản hồi chuột trái/primary
+        if(e.button !== 0) return;
+        e.preventDefault();
+        beginDrag(el, e);
+      });
+    }
+
+    function autoArrange(){
+      const items = Array.from(document.querySelectorAll('.draggable'));
+      const cols = boardCols();
+      ensureBoardHeightFor(items.length);
+      items.forEach((el, i)=>{
+        if(el.parentElement !== board){
+          board.appendChild(el);
+        }
+        el.style.position = 'absolute';
+        const rect = el.getBoundingClientRect();
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = Math.min(GRID.padding + col*GRID.cellW, board.clientWidth  - rect.width);
+        const y = Math.min(GRID.padding + row*GRID.cellH,  board.clientHeight - rect.height);
+        el.style.left = x + 'px';
+        el.style.top  = y + 'px';
+      });
+    }
+
+    function resetAll(){
+      // đưa tất cả về kệ nguồn theo thứ tự xuất hiện ban đầu
+      document.querySelectorAll('.draggable').forEach(el=>{
+        const m2 = meta.get(el) || { originParent: source, originNext: null, placeholder: null };
+        const parent = m2.originParent || source;
+        if(m2.originNext && m2.originNext.parentElement === parent){
+          parent.insertBefore(el, m2.originNext);
+        } else {
+          parent.appendChild(el);
+        }
+        if(m2.placeholder){ m2.placeholder.remove(); m2.placeholder = null; }
+        el.style.position = '';
+        el.style.width = '';
+        el.style.height = '';
+        el.style.left = '';
+        el.style.top  = '';
+      });
+    }
+
+    // Activate
+    document.querySelectorAll('.draggable').forEach(makeDraggable);
+    autoBtn && autoBtn.addEventListener('click', autoArrange);
+    resetBtn && resetBtn.addEventListener('click', resetAll);
+  })();
+</script>
+</body>
+</html>
